@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mind Matrix</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#0f172a,#1e293b);
+  color: white;
+}
+
+/* HEADER */
+header {
+  padding: 30px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: 1px;
+}
+
+/* SECTION SWITCH */
+.switch {
+  display: flex;
+  justify-content: center;
+  margin: 25px 0;
+  gap: 10px;
+}
+
+.switch button {
+  padding: 10px 20px;
+  border: none;
+  background: #334155;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.switch button.active {
+  background: #6366f1;
+}
+
+/* GRID */
+.section {
+  display: none;
+  padding: 20px;
+}
+
+.section.active {
+  display: block;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 20px;
+  max-width: 900px;
+  margin: auto;
+}
+
+/* CARD */
+.card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  padding: 25px;
+  cursor: pointer;
+  transition: 0.25s;
+  backdrop-filter: blur(8px);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: #6366f1;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.card h3 {
+  margin: 0 0 10px;
+}
+
+.card p {
+  font-size: 0.9rem;
+  color: #cbd5f5;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🧠 Mind Matrix</h1>
+</header>
+
+<!-- SWITCH BUTTONS -->
+<div class="switch">
+  <button class="active" onclick="showSection('games')">Games</button>
+  <button onclick="showSection('tools')">Mind Tools</button>
+</div>
+
+<!-- GAMES -->
+<div id="games" class="section active">
+  <div class="grid">
+
+    <div class="card" onclick="openPage('games/sudoku.html')">
+      <h3>Sudoku</h3>
+      <p>Logic + pattern thinking</p>
+    </div>
+
+    <div class="card" onclick="openPage('games/shooter_game.html')">
+      <h3>Shooter Game</h3>
+      <p>Reaction & focus training</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- MIND TOOLS -->
+<div id="tools" class="section">
+  <div class="grid">
+
+    <div class="card" onclick="openPage('mindtools/presence_of_mind_game.html')">
+      <h3>Presence Trainer</h3>
+      <p>Real-life decision making</p>
+    </div>
+
+    <div class="card" onclick="openPage('mindtools/mindflow100_mic.html')">
+      <h3>MindFlow 100</h3>
+      <p>Deep focus builder</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showSection(section) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(section).classList.add('active');
+
+  document.querySelectorAll('.switch button').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function openPage(path) {
+  window.location.href = path;
+}
+</script>
+
+</body>
+</html>
