@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindFlow + Mic</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --s1: #161b22;
+  --s2: #21262d;
+  --accent: #a78bfa;
+  --accent-dim: rgba(167,139,250,0.13);
+  --accent-glow: rgba(167,139,250,0.28);
+  --text: #e6edf3;
+  --dim: #8b949e;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --blue: #58a6ff;
+  --border: #30363d;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
+
+.screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+.screen.on { display:flex; }
+
+/* ── Home ─────────────────────────────── */
+#home { gap:14px; text-align:center; }
+#home h1 {
+  font-size:clamp(44px,10vw,72px); font-weight:900; letter-spacing:6px;
+  background:linear-gradient(135deg,var(--accent) 30%,#60a5fa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+#home .sub { color:var(--dim); font-size:16px; max-width:400px; line-height:1.7; margin-bottom:10px; }
+.mic-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 14px; border-radius:20px; font-size:13px; font-weight:600;
+  background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.4); color:var(--red);
+  margin-bottom:4px;
+}
+.big-btn {
+  padding:15px 48px; background:var(--accent); color:#000;
+  font-size:16px; font-weight:800; letter-spacing:2px;
+  border:none; border-radius:12px; cursor:pointer; transition:all 0.2s; text-transform:uppercase;
+}
+.big-btn:hover { transform:translateY(-3px); box-shadow:0 8px 28px var(--accent-glow); }
+
+/* ── No-mic banner ─────────────────────── */
+#no-mic-msg {
+  display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:#1c1010; border:1px solid var(--red); color:var(--red);
+  padding:10px 20px; border-radius:10px; font-size:13px; z-index:999;
+  max-width:360px; text-align:center;
+}
+#no-mic-msg.show { display:block; animation:fadeUp 0.3s ease; }
+
+/* ── Mode Select ───────────────────────── */
+#modes h2 { font-size:15px; color:var(--dim); letter-spacing:3px; text-transform:uppercase; margin-bottom:28px; }
+.mode-cards { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; max-width:860px; }
+.mcard {
+  width:240px; padding:26px 22px;
+  background:var(--s1); border:2px solid var(--border); border-radius:16px;
+  cursor:pointer; transition:all 0.2s; text-align:left;
+}
+.mcard:hover { transform:translateY(-5px); }
+.mcard.c1:hover { border-color:var(--accent); background:var(--accent-dim); }
+.mcard.c2:hover { border-color:var(--green);  background:rgba(63,185,80,0.1); }
+.mcard.c3:hover { border-color:var(--yellow); background:rgba(210,153,34,0.1); }
+.mcard .ico { font-size:34px; margin-bottom:12px; display:block; }
+.mcard h3  { font-size:17px; font-weight:700; margin-bottom:7px; }
+.mcard p   { font-size:13px; color:var(--dim); line-height:1.55; }
+.mcard .tag {
+  display:inline-block; margin-top:12px; padding:3px 10px; border-radius:20px;
+  font-size:11px; font-weight:700; letter-spacing:1px;
+}
+.t1 { background:rgba(167,139,250,0.15); color:var(--accent); }
+.t2 { background:rgba(63,185,80,0.15);   color:var(--green); }
+.t3 { background:rgba(210,153,34,0.15);  color:var(--yellow); }
+
+/* ── Shared game chrome ────────────────── */
+.g-head {
+  width:100%; max-width:600px;
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;
+}
+.back-btn {
+  background:none; border:1px solid var(--border); color:var(--dim);
+  padding:6px 14px; border-radius:8px; cursor:pointer; font-size:13px; transition:all 0.15s;
+}
+.back-btn:hover { color:var(--text); border-color:var(--dim); }
+.g-label { font-size:13px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; display:flex; align-items:center; gap:8px; }
+.rec-dot {
+  display:none; align-items:center; gap:5px;
+  font-size:11px; color:var(--red); font-weight:700; letter-spacing:1px;
+}
+.rec-dot::before { content:''; width:7px; height:7px; background:var(--red); border-radius:50%; display:inline-block; animation:dot-blink 1s infinite; }
+.rec-dot.show { display:inline-flex; }
+@keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.timer-num {
+  font-size:22px; font-weight:800; font-variant-numeric:tabular-nums;
+  color:var(--accent); min-width:48px; text-align:right;
+}
+.timer-num.urgent { color:var(--red); animation:blink 0.6s infinite alternate; }
+@keyframes blink { to { opacity:0.4; } }
+
+/* ── Mic button ────────────────────────── */
+.mic-btn {
+  padding:11px 16px;
+  background:var(--s2); border:2px solid var(--border);
+  border-radius:12px; color:var(--dim); font-size:18px;
+  cursor:pointer; transition:all 0.2s; line-height:1; flex-shrink:0;
+}
+.mic-btn:hover { border-color:var(--red); color:var(--red); background:rgba(248,113,113,0.07); }
+.mic-btn.active {
+  border-color:var(--red); color:var(--red);
+  background:rgba(248,113,113,0.12);
+  animation:mic-pulse 1.2s ease infinite;
+}
+@keyframes mic-pulse {
+  0%   { box-shadow:0 0 0 0 rgba(248,113,113,0.5); }
+  70%  { box-shadow:0 0 0 10px rgba(248,113,113,0); }
+  100% { box-shadow:0 0 0 0 rgba(248,113,113,0); }
+}
+
+.game-input {
+  flex:1; background:var(--s1); border:2px solid var(--border);
+  border-radius:12px; color:var(--text); font-size:16px; font-weight:500;
+  padding:12px 18px; font-family:inherit; transition:border-color 0.2s;
+}
+.game-input:focus { outline:none; border-color:var(--accent); }
+.game-input::placeholder { color:var(--border); font-weight:400; }
+.game-input.listening { border-color:rgba(248,113,113,0.5); }
+.go-btn {
+  padding:12px 22px; background:var(--accent); color:#000;
+  font-size:15px; font-weight:800; border:none; border-radius:12px;
+  cursor:pointer; transition:opacity 0.15s;
+}
+.go-btn:hover { opacity:0.82; }
+.input-row { width:100%; max-width:600px; display:flex; gap:10px; }
+.hint { font-size:12px; color:var(--border); text-align:center; margin-top:7px; }
+
+/* ── Word Spark ────────────────────────── */
+#screen-ws { justify-content:flex-start; padding-top:24px; gap:0; }
+.ws-cloud {
+  width:100%; max-width:600px; min-height:80px; max-height:160px;
+  overflow:hidden; display:flex; flex-wrap:wrap; gap:7px; align-content:flex-start;
+  padding:14px 16px; background:var(--s1); border:1px solid var(--border);
+  border-radius:12px; margin-bottom:16px;
+}
+.wtag { padding:4px 12px; border-radius:20px; font-size:13px; font-weight:600; animation:pop 0.25s ease; }
+@keyframes pop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+.wtag.current { background:var(--accent); color:#000; }
+.wtag.old     { background:var(--s2); color:var(--dim); }
+.ws-seed-wrap { width:100%; max-width:600px; text-align:center; margin-bottom:20px; }
+.ws-seed-wrap .micro { font-size:11px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+.ws-seed {
+  font-size:clamp(34px,8vw,56px); font-weight:900; letter-spacing:5px;
+  text-transform:uppercase; color:var(--accent);
+  text-shadow:0 0 28px var(--accent-glow); animation:fadeUp 0.35s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.ws-count { font-size:13px; color:var(--dim); margin-bottom:12px; text-align:center; }
+.ws-count b { color:var(--text); font-size:16px; }
+
+/* ── Keep Talking ──────────────────────── */
+#screen-kt { justify-content:flex-start; padding-top:24px; }
+.topic-box {
+  width:100%; max-width:600px; padding:18px 22px;
+  background:var(--s1); border:1px solid var(--border); border-radius:12px; margin-bottom:12px;
+}
+.topic-box .micro { font-size:11px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:7px; }
+.topic-box .topic { font-size:18px; font-weight:600; line-height:1.45; color:var(--text); }
+.kt-mic-row {
+  width:100%; max-width:600px; display:flex; gap:10px;
+  align-items:center; margin-bottom:12px;
+}
+.kt-mic-btn {
+  flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:10px 18px; background:var(--s2); border:2px solid var(--border);
+  border-radius:12px; color:var(--dim); font-size:14px; font-weight:600;
+  cursor:pointer; transition:all 0.2s;
+}
+.kt-mic-btn:hover { border-color:var(--red); color:var(--red); background:rgba(248,113,113,0.07); }
+.kt-mic-btn.active {
+  border-color:var(--red); color:var(--red);
+  background:rgba(248,113,113,0.12);
+  animation:mic-pulse 1.2s ease infinite;
+}
+.kt-area {
+  width:100%; max-width:600px; height:160px;
+  background:var(--s1); border:2px solid var(--border); border-radius:12px;
+  color:var(--text); font-size:16px; line-height:1.75;
+  padding:14px 18px; resize:none; font-family:inherit;
+  transition:border-color 0.2s; margin-bottom:12px;
+}
+.kt-area:focus { outline:none; border-color:var(--green); }
+.kt-area::placeholder { color:var(--border); }
+.kt-area.freeze { border-color:var(--red); animation:shake 0.3s; }
+.kt-area.listening { border-color:rgba(248,113,113,0.5); }
+@keyframes shake { 0%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} 100%{transform:translateX(0)} }
+.sbar-wrap { width:100%; max-width:600px; margin-bottom:10px; }
+.sbar-head {
+  display:flex; justify-content:space-between;
+  font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px;
+}
+.sbar-track { width:100%; height:7px; background:var(--s2); border-radius:4px; overflow:hidden; }
+.sbar-fill { height:100%; border-radius:4px; background:var(--green); transition:width 0.1s linear,background 0.3s; }
+.sbar-fill.mid  { background:var(--yellow); }
+.sbar-fill.high { background:var(--red); }
+.kt-stats { width:100%; max-width:600px; display:flex; gap:20px; font-size:13px; color:var(--dim); }
+.kt-stats b { color:var(--text); }
+
+/* ── Story Sparks ──────────────────────── */
+#screen-ss { justify-content:flex-start; padding-top:24px; }
+.story-box {
+  width:100%; max-width:600px; max-height:200px; overflow-y:auto;
+  background:var(--s1); border:1px solid var(--border); border-radius:12px;
+  padding:16px 20px; font-size:16px; line-height:1.85; margin-bottom:14px;
+  scroll-behavior:smooth;
+}
+.story-box .starter { color:var(--accent); font-style:italic; }
+.s-new { color:var(--green); animation:fadeUp 0.4s ease; }
+.stbar-wrap { width:100%; max-width:600px; margin-bottom:10px; }
+.stbar-head {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px;
+}
+.prompt-chip {
+  padding:3px 10px; background:rgba(210,153,34,0.15); border:1px solid rgba(210,153,34,0.3);
+  border-radius:20px; font-size:12px; color:var(--yellow); font-weight:700; display:none;
+}
+.prompt-chip.show { display:inline-block; animation:pop 0.25s ease; }
+.stbar-track { width:100%; height:5px; background:var(--s2); border-radius:4px; overflow:hidden; }
+.stbar-fill { height:100%; background:var(--blue); border-radius:4px; transition:width 0.25s linear,background 0.3s; }
+.stbar-fill.mid { background:var(--yellow); }
+.stbar-fill.low { background:var(--red); }
+.ss-count { font-size:13px; color:var(--dim); margin-bottom:10px; text-align:right; width:100%; max-width:600px; }
+.ss-count b { color:var(--text); }
+
+/* ── Result ────────────────────────────── */
+#result { gap:14px; text-align:center; }
+#result h2 { font-size:40px; font-weight:900; letter-spacing:4px; color:var(--accent); text-shadow:0 0 24px var(--accent-glow); }
+.r-mode { font-size:12px; color:var(--dim); letter-spacing:2px; text-transform:uppercase; }
+.stars { font-size:38px; letter-spacing:6px; }
+.r-stats {
+  display:flex; gap:20px; flex-wrap:wrap; justify-content:center;
+  background:var(--s1); padding:18px 28px; border-radius:12px; border:1px solid var(--border);
+}
+.rstat .rl { font-size:11px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+.rstat .rv { font-size:26px; font-weight:800; }
+.r-msg { font-size:15px; color:var(--dim); max-width:340px; line-height:1.65; font-style:italic; }
+.r-btns { display:flex; gap:12px; margin-top:6px; }
+.out-btn {
+  padding:11px 26px; background:transparent; border:2px solid var(--border);
+  color:var(--text); font-size:14px; font-weight:600; border-radius:10px; cursor:pointer; transition:all 0.15s;
+}
+.out-btn:hover { border-color:var(--accent); color:var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="no-mic-msg">🎤 Speech recognition requires Chrome or Edge browser. You can still use keyboard input.</div>
+
+<!-- ══ HOME ══════════════════════════════════════════════════ -->
+<div id="home" class="screen on">
+  <h1>MindFlow</h1>
+  <div class="mic-badge">🎤 Microphone Enabled</div>
+  <p class="sub">Speak or type — three exercises to silence the mental block and keep your thoughts flowing freely.</p>
+  <button class="big-btn" onclick="show('modes')">Let's Go</button>
+</div>
+
+<!-- ══ MODE SELECT ═══════════════════════════════════════════ -->
+<div id="modes" class="screen">
+  <h2>Pick your exercise</h2>
+  <div class="mode-cards">
+    <div class="mcard c1" onclick="beginWS()">
+      <span class="ico">⚡</span>
+      <h3>Word Spark</h3>
+      <p>A word appears — say or type the first thing it makes you think of. Chain from that word. 60 seconds, no judging.</p>
+      <span class="tag t1">Word Association</span>
+    </div>
+    <div class="mcard c2" onclick="beginKT()">
+      <span class="ico">🎙️</span>
+      <h3>Keep Talking</h3>
+      <p>A random topic. Speak or type continuously — never stop. A silence meter fills when you pause. Don't let it fill!</p>
+      <span class="tag t2">Flow Training</span>
+    </div>
+    <div class="mcard c3" onclick="beginSS()">
+      <span class="ico">📖</span>
+      <h3>Story Sparks</h3>
+      <p>Build a story one sentence at a time. Speak or type each sentence within 10 seconds. Stuck? A prompt word rescues you.</p>
+      <span class="tag t3">Sentence Building</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WORD SPARK ════════════════════════════════════════════ -->
+<div id="screen-ws" class="screen">
+  <div class="g-head">
+    <button class="back-btn" onclick="stopAll();show('modes')">⬅ Modes</button>
+    <span class="g-label">⚡ Word Spark <span class="rec-dot" id="ws-rec">REC</span></span>
+    <span class="timer-num" id="ws-timer">60</span>
+  </div>
+  <div class="ws-cloud" id="ws-cloud"></div>
+  <div class="ws-seed-wrap">
+    <div class="micro">Say or type a word connected to</div>
+    <div class="ws-seed" id="ws-seed">—</div>
+  </div>
+  <div class="ws-count">Words chained: <b id="ws-cnt">0</b></div>
+  <div class="input-row">
+    <input class="game-input" id="ws-input" placeholder="Type or speak a related word…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="mic-btn" id="ws-mic" onclick="toggleMic('ws')" title="Toggle microphone">🎤</button>
+    <button class="go-btn" onclick="wsSubmit()">→</button>
+  </div>
+  <p class="hint">Mic on → speak a word and it auto-submits &nbsp;|&nbsp; Or type + Enter</p>
+</div>
+
+<!-- ══ KEEP TALKING ══════════════════════════════════════════ -->
+<div id="screen-kt" class="screen">
+  <div class="g-head">
+    <button class="back-btn" onclick="stopAll();show('modes')">⬅ Modes</button>
+    <span class="g-label">🎙️ Keep Talking <span class="rec-dot" id="kt-rec">REC</span></span>
+    <span class="timer-num" id="kt-timer">60</span>
+  </div>
+  <div class="topic-box">
+    <div class="micro">Your topic</div>
+    <div class="topic" id="kt-topic">—</div>
+  </div>
+  <div class="kt-mic-row">
+    <button class="kt-mic-btn" id="kt-mic-btn" onclick="toggleMic('kt')">
+      🎤 <span id="kt-mic-label">Enable Microphone</span>
+    </button>
+  </div>
+  <textarea class="kt-area" id="kt-area" placeholder="Start typing… don't stop!" spellcheck="false"></textarea>
+  <div class="sbar-wrap">
+    <div class="sbar-head">
+      <span id="sbar-label">Silence meter — keep typing!</span>
+      <span id="kt-pauses">0 pauses</span>
+    </div>
+    <div class="sbar-track"><div class="sbar-fill" id="sbar-fill" style="width:0%"></div></div>
+  </div>
+  <div class="kt-stats">
+    <div>Words: <b id="kt-wc">0</b></div>
+    <div>Pauses: <b id="kt-p">0</b></div>
+  </div>
+</div>
+
+<!-- ══ STORY SPARKS ══════════════════════════════════════════ -->
+<div id="screen-ss" class="screen">
+  <div class="g-head">
+    <button class="back-btn" onclick="stopAll();show('modes')">⬅ Modes</button>
+    <span class="g-label">📖 Story Sparks <span class="rec-dot" id="ss-rec">REC</span></span>
+    <span class="timer-num" id="ss-timer">10</span>
+  </div>
+  <div class="story-box" id="story-box"></div>
+  <div class="stbar-wrap">
+    <div class="stbar-head">
+      <span>Sentence timer</span>
+      <span class="prompt-chip" id="prompt-chip">Use: <span id="prompt-word"></span></span>
+    </div>
+    <div class="stbar-track"><div class="stbar-fill" id="stbar-fill" style="width:100%"></div></div>
+  </div>
+  <div class="ss-count">Sentences: <b id="ss-cnt">0</b> / 8</div>
+  <div class="input-row">
+    <input class="game-input" id="ss-input" placeholder="Speak or type the next sentence…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="mic-btn" id="ss-mic" onclick="toggleMic('ss')" title="Toggle microphone">🎤</button>
+    <button class="go-btn" onclick="ssSubmit()">→</button>
+  </div>
+  <p class="hint">Mic on → speak a sentence, auto-submits when you pause &nbsp;|&nbsp; Or type + Enter</p>
+</div>
+
+<!-- ══ RESULT ════════════════════════════════════════════════ -->
+<div id="result" class="screen">
+  <div class="r-mode" id="r-mode">Word Spark</div>
+  <h2>Well Done!</h2>
+  <div class="stars" id="r-stars">⭐⭐⭐</div>
+  <div class="r-stats" id="r-stats"></div>
+  <p class="r-msg" id="r-msg"></p>
+  <div class="r-btns">
+    <button class="out-btn" id="r-again">↺ Play Again</button>
+    <button class="out-btn" onclick="show('modes')">⬅ Change Mode</button>
+  </div>
+</div>
+
+<script>
+// ─── Data ──────────────────────────────────────────────────────────
+const TOPICS = [
+  'your most memorable travel experience',
+  'what makes a true friendship last',
+  'a skill you have always wanted to learn',
+  'your perfect way to spend a free afternoon',
+  'the best advice someone ever gave you',
+  'something small that brings you real joy',
+  'a movie or book that stayed with you',
+  'what success actually means to you',
+  'a challenge you are proud of overcoming',
+  'your favourite time of the day and why',
+  'what you would tell your younger self',
+  'the qualities you most admire in people',
+  'a place you have always dreamed of visiting',
+  'how you would spend a surprise day off',
+  'something most people do not know about you',
+  'your earliest childhood memory',
+  'what a perfect morning looks like to you',
+  'a person who changed your life',
+  'the best meal you have ever eaten',
+  'what makes a great conversation',
+  'your favourite season and what it means to you',
+  'a moment you wish you could relive',
+  'what kindness looks like in everyday life',
+  'your relationship with music',
+  'things that make you laugh out loud',
+  'what home means to you',
+  'a hobby you wish you had more time for',
+  'what you would do with a million dollars',
+  'the most beautiful place you have ever seen',
+  'what you find most fascinating about the world',
+  'a time you stepped outside your comfort zone',
+  'how you recharge when you are exhausted',
+  'what courage means to you',
+  'a goal you are working towards right now',
+  'your favourite childhood game or activity',
+  'what technology has changed most in your lifetime',
+  'the hardest decision you have ever made',
+  'what you value most in a workplace',
+  'a random act of kindness you witnessed or did',
+  'your ideal holiday destination and why',
+  'what motivates you to keep going',
+  'a tradition that matters to you',
+  'how you feel about change and new beginnings',
+  'what you wish schools taught more of',
+  'the last thing that genuinely surprised you',
+  'your relationship with solitude and quiet time',
+  'what makes a city feel alive',
+  'a time when things did not go to plan',
+  'how you approach learning something new',
+  'what you think about before falling asleep',
+  'your favourite way to be creative',
+  'the impact of a single kind word',
+  'what animals can teach us about life',
+  'how travel changes the way you think',
+  'the role of food in your life and culture',
+  'what makes someone truly inspiring',
+  'your thoughts on the power of habits',
+  'a book you think everyone should read',
+  'what the ideal weekend looks like to you',
+  'how you deal with uncertainty',
+  'a skill you learned from someone unexpected',
+  'what you would change about the world if you could',
+  'how nature affects your mood and wellbeing',
+  'a time when you felt truly proud of yourself',
+  'what role laughter plays in your life',
+  'the best gift you have ever given or received',
+  'what you think about while on a long walk',
+  'your relationship with time and how you manage it',
+  'a dream you have not given up on',
+  'what you appreciate most about where you live',
+  'how you know when you have made the right choice',
+  'the most useful thing you own',
+  'what forgiveness means to you',
+  'a moment that changed how you see yourself',
+  'how you stay calm under pressure',
+  'what you think the future will look like',
+  'your earliest memory of feeling proud',
+  'a place that always makes you feel at peace',
+  'what simple pleasures mean the most to you',
+  'how you approach difficult conversations',
+  'the person you call when things get tough',
+  'what you miss most about being younger',
+  'a project you would love to start someday',
+  'how you define a life well lived',
+  'what you have learned from your mistakes',
+  'how you stay curious and keep learning',
+  'the most interesting conversation you ever had',
+  'what music means to you emotionally',
+  'a childhood dream you still think about',
+  'how the people around you shape who you are',
+  'what gives you a sense of purpose',
+  'a time you changed your mind about something important',
+  'how you celebrate small wins',
+  'what freedom feels like to you',
+  'the strangest compliment you ever received',
+  'how you prepare for something that scares you',
+  'what patience has taught you',
+  'a memory linked to a specific smell or sound',
+  'how you know when to ask for help',
+  'what you hope people remember about you',
+];
+
+const SEEDS = [
+  'ocean','fire','journey','laughter','mountain',
+  'music','dream','coffee','adventure','friendship',
+  'city','silence','light','freedom','colour',
+  'storm','memory','strength','hope','smile',
+  'forest','rhythm','wonder','home','change',
+  'idea','sunset','road','warmth','rain',
+  'cloud','bridge','mirror','stone','garden',
+  'river','shadow','wind','flame','star',
+  'desert','island','tiger','night','morning',
+  'door','window','peace','chaos','dance',
+  'fear','trust','power','secret','wisdom',
+  'joy','sorrow','winter','spring','summer',
+  'autumn','child','elder','teacher','student',
+  'hunger','thirst','victory','failure','flight',
+  'ground','sky','sea','earth','moon',
+  'sun','bird','wolf','tree','leaf',
+  'root','seed','bloom','harvest','time',
+  'space','voice','word','story','song',
+  'laugh','cry','run','rest','build',
+  'break','heal','grow','spark','horizon',
+];
+
+const STARTERS = [
+  'The door swung open and no one expected what came next —',
+  'She had been carrying that secret for years, until the day',
+  'It started as an ordinary Tuesday morning, but then',
+  'Nobody believed the story until they saw it for themselves —',
+  'He looked at the old photograph and suddenly remembered',
+  'The city felt completely different that night because',
+  'They had been friends for a decade, but today was the first time',
+  'The moment the phone rang, she already knew that',
+  'It was a small decision — the kind that changes everything —',
+  'Everyone in the room went quiet when the stranger walked in and',
+  'The letter arrived on a Monday, and nothing was ever the same after',
+  'She had always been the careful one, which is why nobody expected her to',
+  'The last train was about to leave when he noticed the abandoned suitcase',
+  'It was the kind of rain that made everything feel possible —',
+  'Nobody ever talked about what happened in that house, until',
+  'The map was old, hand-drawn, and marked with a single X where',
+  'She woke up that morning with a feeling she could not name —',
+  'He had practised this speech a hundred times, but when the moment came',
+  'The market was crowded and loud, but she only had eyes for',
+  'They had agreed never to speak of it again, until the night when',
+  'It began with a wrong number, a brief apology, and then',
+  'The old bookshop had been closed for years before she found the key',
+  'He thought it was just another ordinary sunset, until it',
+  'The child pointed at the sky and said something that made everyone stop',
+  'She had returned to the same cafe every year for a decade, hoping',
+  'The package arrived with no name, no address, only a single instruction —',
+  'It was the smallest town on the map, which is exactly why they chose it',
+  'She never thought she would say yes, but when the question finally came',
+  'The clock had stopped at midnight and no one could explain why',
+  'He found the notebook under a loose floorboard and opened it to find',
+  'The storm had passed, leaving behind only silence and a door wide open',
+  'They set out at dawn with nothing but a compass and a half-formed plan',
+  'She had kept the secret in a drawer for twenty years, until her daughter',
+  'The invitation had no sender, no RSVP, only a date and a place',
+  'He had run from that conversation for years, but today he finally turned and',
+  'The town had a rule that no one ever explained to newcomers —',
+  'Everything was going perfectly until she glanced out the window and saw',
+  'He could not remember the last time he had laughed like that, until',
+  'The lights went out across the whole city at once, and in the darkness',
+  'She had never believed in coincidence until the day she met',
+  'The road stretched endlessly ahead and no one spoke for miles, until',
+  'He had spent years looking for it, and now that he had found it',
+  'The music started from somewhere upstairs, though the house was supposed to be empty',
+  'She opened the box expecting nothing and found something that made her sit down',
+  'It was supposed to be a quick detour, but the path led somewhere unexpected',
+  'The old man had been watching her for an hour before he finally stood up',
+  'She pressed send before she could stop herself, and then everything changed',
+  'He had always thought the story ended there, until a letter arrived that',
+  'The village had not had a visitor in three years, so when the car appeared',
+  'She found the note tucked inside her coat pocket, in handwriting she did not recognise',
+  'The competition had only one rule, and it was the one rule he had broken',
+  'He looked at the empty chair at the end of the table and finally understood',
+  'The door to the roof had always been locked — so why was it open today',
+  'She had imagined this moment so many times, but the reality was nothing like expected',
+  'The train stopped between stations, and in the silence a stranger leaned over and said',
+  'He followed the sound of laughter through three streets before he found its source',
+  'The last page of the diary was blank except for a single sentence that read',
+  'She had lived next door for years without ever knocking, until one morning when',
+  'The photograph showed four people she had never met, but she recognised the house',
+  'He made one simple promise and kept it for thirty years, until the day',
+  'The workshop had been shut for decades, but the light inside was still on',
+  'She said it so quietly that only he heard, and that one sentence changed everything',
+  'The recipe had been passed down for generations, but one ingredient was always left out',
+  'He arrived at the airport an hour early and spent that time watching a woman who',
+  'The garden had been neglected for years, until the new neighbours decided to',
+  'She thought the hardest part was starting, but the hardest part turned out to be',
+  'The sound of footsteps on the stairs made him realise he had forgotten something',
+  'He had been searching for the right words for so long that when they came',
+  'The two strangers sat opposite each other for an hour before one of them spoke',
+  'She reached into her bag and pulled out something that was not hers',
+  'The city at night looked nothing like it did during the day, especially when',
+  'He had exactly one hour to fix what ten years had broken',
+  'The answer was so obvious that when she finally saw it, she sat down and',
+  'Something about the way she smiled told him that she already knew the ending',
+  'The storm left behind a silence so complete that even the children stopped and',
+  'He had carried the key for years without knowing what it opened, until',
+  'The last words she heard before leaving home were ones she would never forget',
+  'He only realised what he had lost when he saw it from a distance',
+  'The shortcut through the park was faster, yes, but it always led to',
+  'She opened the window and let in the kind of morning that makes you believe',
+  'He had promised himself he would not look back, but at the last moment',
+  'The old woman handed her the envelope and said only one thing before walking away',
+  'They started talking because they were bored, and ended up talking until',
+  'The house had been in the family for a hundred years, but no one had opened',
+  'She heard her name called in a crowd of strangers and turned to find',
+  'The project had been abandoned half-finished, and now someone had quietly started it again',
+  'He wrote the same sentence every day for a year, and on the last day',
+  'The thing about that summer was that no one talked about what happened, until',
+  'She drew the curtain back and looked out at a world that had shifted overnight',
+  'He had never been good at goodbyes, which is why he chose to leave by',
+  'The map showed a city that no longer existed, yet somehow she knew exactly where',
+  'She took a different route home that evening and found something unexpected',
+  'The silence between them was full of everything they had not yet said',
+  'He checked his pocket and found a note he had no memory of writing',
+  'The reunion went exactly as planned, until the moment when',
+  'She closed the book, set it down, and said the one thing no one expected',
+  'He stood at the crossroads for what felt like hours before he finally chose',
+  'The neighbours had always seemed ordinary, until the morning she noticed the light',
+  'The year everything changed began very quietly, with',
+  'She had been right all along, but being right felt nothing like she had imagined',
+];
+
+const PROMPTS = [
+  'suddenly','however','strangely','luckily','meanwhile',
+  'together','secretly','finally','because','elsewhere',
+  'outside','calmly','almost','alone','still',
+  'instead','beyond','quietly','never','always',
+  'nearby','again','before','after','perhaps',
+  'somehow','otherwise','later','actually','unfortunately',
+  'remarkably','above','below','inside','quickly',
+  'slowly','honestly','eventually','immediately','desperately',
+  'unexpectedly','breathlessly','reluctantly','curiously','fortunately',
+  'carefully','boldly','nervously','joyfully','silently',
+  'furiously','gently','bravely','thoughtfully','foolishly',
+  'recklessly','tenderly','deeply','truly','barely',
+  'abruptly','willingly','fearlessly','naturally','clearly',
+  'partly','anxiously','thankfully','doubtfully','proudly',
+  'sadly','happily','swiftly','gradually','instantly',
+  'roughly','smoothly','fiercely','eagerly','openly',
+  'patiently','impatiently','blindly','obviously','surely',
+  'likely','seemingly','apparently','evidently','particularly',
+  'especially','normally','rarely','frantically','anywhere',
+  'everywhere','hopefully','helplessly','endlessly','directly',
+];
+
+// ─── Speech Recognition ────────────────────────────────────────────
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let micActive = false;
+let micMode = null; // 'ws' | 'kt' | 'ss'
+let ktFinalTranscript = '';
+
+if (SR) {
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (e) => {
+    if (micMode === 'ws') handleWSResult(e);
+    else if (micMode === 'kt') handleKTResult(e);
+    else if (micMode === 'ss') handleSSResult(e);
+  };
+
+  recognition.onend = () => {
+    // auto-restart if we're still supposed to be listening
+    if (micActive && micMode && activeMode) {
+      try { recognition.start(); } catch(_) {}
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      showNoMicMsg('Microphone permission denied. Please allow access in your browser settings.');
+      stopMic();
+    } else if (e.error === 'no-speech') {
+      // normal — just no speech detected, recognition will restart via onend
+    }
+  };
+}
+
+function toggleMic(mode) {
+  if (!SR) { showNoMicMsg('Speech recognition is not supported in this browser. Please use Chrome or Edge.'); return; }
+  if (micActive && micMode === mode) stopMic();
+  else startMic(mode);
+}
+
+function startMic(mode) {
+  stopMic(); // stop any existing session first
+  micActive = true;
+  micMode = mode;
+  if (mode === 'kt') ktFinalTranscript = document.getElementById('kt-area').value;
+  try { recognition.start(); } catch(_) {}
+  updateMicUI(mode, true);
+}
+
+function stopMic() {
+  if (!micActive) return;
+  micActive = false;
+  const prevMode = micMode;
+  micMode = null;
+  try { recognition.stop(); } catch(_) {}
+  if (prevMode) updateMicUI(prevMode, false);
+}
+
+function updateMicUI(mode, on) {
+  // Mode-specific mic button
+  const btn = document.getElementById(mode + '-mic') || document.getElementById(mode + '-mic-btn');
+  const rec = document.getElementById(mode + '-rec');
+
+  if (btn) { btn.classList.toggle('active', on); }
+  if (rec) { rec.classList.toggle('show', on); }
+
+  if (mode === 'kt') {
+    const label = document.getElementById('kt-mic-label');
+    const area  = document.getElementById('kt-area');
+    const sbarLbl = document.getElementById('sbar-label');
+    if (label) label.textContent = on ? 'Stop Microphone' : 'Enable Microphone';
+    if (area)  area.classList.toggle('listening', on);
+    if (area)  area.placeholder = on ? "Speak freely\u2026 your words appear here" : "Start typing\u2026 don't stop!";
+    if (sbarLbl) sbarLbl.textContent = on ? 'Silence meter — keep talking!' : 'Silence meter — keep typing!';
+  }
+  if (mode === 'ws' || mode === 'ss') {
+    const input = document.getElementById(mode + '-input');
+    if (input) input.classList.toggle('listening', on);
+  }
+}
+
+// ─── WS result handler ─────────────────────────────────────────────
+function handleWSResult(e) {
+  let final = '', interim = '';
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    if (e.results[i].isFinal) final += e.results[i][0].transcript;
+    else interim += e.results[i][0].transcript;
+  }
+  const input = document.getElementById('ws-input');
+  const word = (final || interim).trim().split(/\s+/)[0] || '';
+  input.value = word;
+  if (final && word) wsSubmit(); // auto-submit on final
+}
+
+// ─── KT result handler ─────────────────────────────────────────────
+function handleKTResult(e) {
+  silenceMs = 0; // any speech resets silence meter
+  let newFinal = '', interim = '';
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    if (e.results[i].isFinal) newFinal += e.results[i][0].transcript + ' ';
+    else interim += e.results[i][0].transcript;
+  }
+  if (newFinal) ktFinalTranscript += newFinal;
+  const area = document.getElementById('kt-area');
+  area.value = ktFinalTranscript + interim;
+  area.scrollTop = area.scrollHeight;
+  const words = (ktFinalTranscript + interim).trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('kt-wc').textContent = words;
+}
+
+// ─── SS result handler ─────────────────────────────────────────────
+function handleSSResult(e) {
+  let final = '', interim = '';
+  for (let i = e.resultIndex; i < e.results.length; i++) {
+    if (e.results[i].isFinal) final += e.results[i][0].transcript;
+    else interim += e.results[i][0].transcript;
+  }
+  const input = document.getElementById('ss-input');
+  if (final) {
+    const sentence = final.trim();
+    input.value = sentence;
+    if (sentence.split(/\s+/).length >= 3) ssSubmit(); // auto-submit if a proper sentence
+  } else {
+    input.value = interim;
+  }
+}
+
+function showNoMicMsg(txt) {
+  const el = document.getElementById('no-mic-msg');
+  el.textContent = '🎤 ' + txt;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ─── Shared state ──────────────────────────────────────────────────
+let activeMode = null;
+let mainTimer = null, mainSecs = 0;
+let silenceInterval = null, silenceMs = 0;
+const SILENCE_LIMIT = 3000;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+function stopAll() {
+  stopMic();
+  clearInterval(mainTimer);
+  clearInterval(silenceInterval);
+  clearInterval(ssInterval);
+  mainTimer = silenceInterval = ssInterval = null;
+  activeMode = null;
+}
+
+function startMainTimer(secs, elId, urgentAt, onDone) {
+  mainSecs = secs;
+  const el = document.getElementById(elId);
+  el.textContent = mainSecs;
+  el.classList.remove('urgent');
+  clearInterval(mainTimer);
+  mainTimer = setInterval(() => {
+    mainSecs--;
+    el.textContent = mainSecs;
+    if (mainSecs <= urgentAt) el.classList.add('urgent');
+    if (mainSecs <= 0) { clearInterval(mainTimer); onDone(); }
+  }, 1000);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// WORD SPARK
+// ══════════════════════════════════════════════════════════════════
+let wsCount = 0;
+
+function beginWS() {
+  stopMic();
+  activeMode = 'ws';
+  wsCount = 0;
+  const seed = SEEDS[Math.random() * SEEDS.length | 0];
+  document.getElementById('ws-cloud').innerHTML = '';
+  document.getElementById('ws-cnt').textContent = '0';
+  document.getElementById('ws-input').value = '';
+  document.getElementById('ws-mic').classList.remove('active');
+  document.getElementById('ws-rec').classList.remove('show');
+  setWSSeed(seed);
+  addWordTag(seed, true);
+  show('screen-ws');
+  document.getElementById('ws-input').focus();
+  startMainTimer(60, 'ws-timer', 10, () => showResult('ws'));
+}
+
+function setWSSeed(word) {
+  const el = document.getElementById('ws-seed');
+  el.style.animation = 'none'; el.offsetHeight; el.style.animation = '';
+  el.textContent = word.toUpperCase();
+}
+
+function addWordTag(word, isCurrent) {
+  const cloud = document.getElementById('ws-cloud');
+  cloud.querySelectorAll('.wtag.current').forEach(t => { t.classList.remove('current'); t.classList.add('old'); });
+  const tag = document.createElement('span');
+  tag.className = 'wtag ' + (isCurrent ? 'current' : 'old');
+  tag.textContent = word;
+  cloud.prepend(tag);
+  const tags = cloud.querySelectorAll('.wtag');
+  if (tags.length > 20) tags[tags.length - 1].remove();
+}
+
+function wsSubmit() {
+  const input = document.getElementById('ws-input');
+  const word = input.value.trim().split(/\s+/)[0]; // take first word only
+  if (!word || mainSecs <= 0) return;
+  input.value = '';
+  wsCount++;
+  document.getElementById('ws-cnt').textContent = wsCount;
+  setWSSeed(word);
+  addWordTag(word, true);
+  if (!micActive) input.focus();
+}
+
+document.getElementById('ws-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); wsSubmit(); }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// KEEP TALKING
+// ══════════════════════════════════════════════════════════════════
+let ktPauses = 0;
+
+function beginKT() {
+  stopMic();
+  activeMode = 'kt';
+  ktPauses = 0; silenceMs = 0;
+  ktFinalTranscript = '';
+  const topic = TOPICS[Math.random() * TOPICS.length | 0];
+  document.getElementById('kt-topic').textContent = topic;
+  document.getElementById('kt-area').value = '';
+  document.getElementById('kt-area').classList.remove('freeze', 'listening');
+  document.getElementById('kt-area').placeholder = 'Start typing… don\'t stop!';
+  document.getElementById('kt-wc').textContent = '0';
+  document.getElementById('kt-p').textContent = '0';
+  document.getElementById('kt-pauses').textContent = '0 pauses';
+  document.getElementById('kt-mic-btn').classList.remove('active');
+  document.getElementById('kt-rec').classList.remove('show');
+  document.getElementById('kt-mic-label').textContent = 'Enable Microphone';
+  document.getElementById('sbar-label').textContent = 'Silence meter — keep typing!';
+  setBar('sbar-fill', 0);
+  show('screen-kt');
+  document.getElementById('kt-area').focus();
+  startMainTimer(60, 'kt-timer', 10, () => { clearInterval(silenceInterval); stopMic(); showResult('kt'); });
+  startSilenceBar();
+}
+
+function startSilenceBar() {
+  clearInterval(silenceInterval);
+  silenceInterval = setInterval(() => {
+    if (activeMode !== 'kt') return;
+    silenceMs += 80;
+    const pct = Math.min(silenceMs / SILENCE_LIMIT * 100, 100);
+    const fill = document.getElementById('sbar-fill');
+    fill.style.width = pct + '%';
+    fill.className = 'sbar-fill' + (pct >= 80 ? ' high' : pct >= 50 ? ' mid' : '');
+    if (silenceMs >= SILENCE_LIMIT) {
+      silenceMs = 0;
+      ktPauses++;
+      document.getElementById('kt-p').textContent = ktPauses;
+      document.getElementById('kt-pauses').textContent = ktPauses + ' pause' + (ktPauses !== 1 ? 's' : '');
+      const area = document.getElementById('kt-area');
+      area.classList.add('freeze');
+      setTimeout(() => area.classList.remove('freeze'), 400);
+    }
+  }, 80);
+}
+
+document.getElementById('kt-area').addEventListener('input', () => {
+  silenceMs = 0;
+  const words = document.getElementById('kt-area').value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('kt-wc').textContent = words;
+});
+
+function setBar(id, pct) { document.getElementById(id).style.width = pct + '%'; }
+
+// ══════════════════════════════════════════════════════════════════
+// STORY SPARKS
+// ══════════════════════════════════════════════════════════════════
+let ssInterval = null;
+let ssSecsLeft = 10, ssSentences = 0, ssPromptGiven = false, ssAutoSubmits = 0;
+const SS_SECS = 10, SS_TARGET = 8;
+
+function beginSS() {
+  stopMic();
+  activeMode = 'ss';
+  ssSentences = 0; ssAutoSubmits = 0;
+  const starter = STARTERS[Math.random() * STARTERS.length | 0];
+  document.getElementById('story-box').innerHTML = '<span class="starter">' + starter + '</span>';
+  document.getElementById('ss-input').value = '';
+  document.getElementById('ss-cnt').textContent = '0';
+  document.getElementById('prompt-chip').classList.remove('show');
+  document.getElementById('ss-mic').classList.remove('active');
+  document.getElementById('ss-rec').classList.remove('show');
+  show('screen-ss');
+  document.getElementById('ss-input').focus();
+  startSentenceTimer();
+}
+
+function startSentenceTimer() {
+  clearInterval(ssInterval);
+  ssSecsLeft = SS_SECS;
+  ssPromptGiven = false;
+  document.getElementById('prompt-chip').classList.remove('show');
+  updateSSTimer(); updateSSBar();
+  ssInterval = setInterval(() => {
+    ssSecsLeft--;
+    updateSSTimer(); updateSSBar();
+    if (ssSecsLeft === 4 && !ssPromptGiven) {
+      ssPromptGiven = true;
+      const pw = PROMPTS[Math.random() * PROMPTS.length | 0];
+      document.getElementById('prompt-word').textContent = pw;
+      document.getElementById('prompt-chip').classList.add('show');
+    }
+    if (ssSecsLeft <= 0) {
+      clearInterval(ssInterval);
+      const input = document.getElementById('ss-input');
+      const val = input.value.trim();
+      if (val) addSentence(val, false);
+      else { addSentence('…', true); ssAutoSubmits++; }
+      input.value = '';
+    }
+  }, 1000);
+}
+
+function updateSSTimer() {
+  const el = document.getElementById('ss-timer');
+  el.textContent = ssSecsLeft;
+  ssSecsLeft <= 3 ? el.classList.add('urgent') : el.classList.remove('urgent');
+}
+
+function updateSSBar() {
+  const fill = document.getElementById('stbar-fill');
+  const pct = ssSecsLeft / SS_SECS * 100;
+  fill.style.width = pct + '%';
+  fill.className = 'stbar-fill' + (pct <= 25 ? ' low' : pct <= 50 ? ' mid' : '');
+}
+
+function addSentence(text, isAuto) {
+  const box = document.getElementById('story-box');
+  const span = document.createElement('span');
+  span.className = 's-new';
+  span.textContent = ' ' + text;
+  box.appendChild(span);
+  box.scrollTop = box.scrollHeight;
+  setTimeout(() => span.classList.remove('s-new'), 1500);
+  ssSentences++;
+  document.getElementById('ss-cnt').textContent = ssSentences;
+  if (ssSentences >= SS_TARGET) {
+    clearInterval(ssInterval);
+    setTimeout(() => { stopMic(); showResult('ss'); }, 600);
+  } else {
+    startSentenceTimer();
+    if (!micActive) document.getElementById('ss-input').focus();
+  }
+}
+
+function ssSubmit() {
+  const input = document.getElementById('ss-input');
+  const val = input.value.trim();
+  if (!val) return;
+  clearInterval(ssInterval);
+  input.value = '';
+  addSentence(val, false);
+}
+
+document.getElementById('ss-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); ssSubmit(); }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// RESULTS
+// ══════════════════════════════════════════════════════════════════
+const RESULT_DATA = {
+  ws: {
+    label:'⚡ Word Spark', againFn: beginWS,
+    levels:[
+      {min:0,  stars:1, msg:"Every spark counts. Daily practice builds strong word networks in your brain."},
+      {min:12, stars:2, msg:"Nice flow! Your associations are coming faster. Keep going — this compounds."},
+      {min:22, stars:3, msg:"Outstanding! Your mind is making rapid, free connections. That's the goal."},
+    ],
+    stats:() => [
+      {label:'Words chained', val:wsCount, color:'var(--accent)'},
+      {label:'Avg per 10s',   val:(wsCount/6).toFixed(1), color:'var(--dim)'},
+    ],
+    score:() => wsCount,
+  },
+  kt: {
+    label:'🎙️ Keep Talking', againFn: beginKT,
+    levels:[
+      {min:0,   stars:1, msg:"Getting started is the hardest part. You showed up — that is already progress."},
+      {min:60,  stars:2, msg:"Solid output! The more you practice, the longer the silence stays away."},
+      {min:120, stars:3, msg:"Incredible flow! Your thoughts kept moving. That is exactly what you are training for."},
+    ],
+    stats:() => {
+      const wc = parseInt(document.getElementById('kt-wc').textContent)||0;
+      return [
+        {label:'Words',   val:wc, color:'var(--green)'},
+        {label:'Pauses',  val:ktPauses, color:ktPauses===0?'var(--green)':ktPauses<3?'var(--yellow)':'var(--red)'},
+        {label:'Via mic', val:micActive?'Yes':'No', color:'var(--dim)'},
+      ];
+    },
+    score:() => parseInt(document.getElementById('kt-wc').textContent)||0,
+  },
+  ss: {
+    label:'📖 Story Sparks', againFn: beginSS,
+    levels:[
+      {min:0, stars:1, msg:"Each sentence you write is a rep for your brain. Keep showing up."},
+      {min:4, stars:2, msg:"Great story momentum! You kept your thoughts moving forward."},
+      {min:7, stars:3, msg:"Perfect run! You built a full story without freezing. That is real fluency."},
+    ],
+    stats:() => [
+      {label:'Sentences',    val:ssSentences, color:'var(--yellow)'},
+      {label:'Auto-submits', val:ssAutoSubmits, color:ssAutoSubmits===0?'var(--green)':'var(--red)'},
+      {label:'Self-written', val:ssSentences-ssAutoSubmits, color:'var(--dim)'},
+    ],
+    score:() => ssSentences,
+  },
+};
+
+function showResult(mode) {
+  stopAll();
+  const d = RESULT_DATA[mode];
+  const score = d.score();
+  const lvl = [...d.levels].reverse().find(l => score >= l.min) || d.levels[0];
+  document.getElementById('r-mode').textContent = d.label;
+  document.getElementById('r-stars').textContent = '⭐'.repeat(lvl.stars) + '☆'.repeat(3-lvl.stars);
+  document.getElementById('r-msg').textContent = lvl.msg;
+  document.getElementById('r-again').onclick = d.againFn;
+  const statsEl = document.getElementById('r-stats');
+  statsEl.innerHTML = '';
+  d.stats().forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'rstat';
+    div.innerHTML = `<div class="rl">${s.label}</div><div class="rv" style="color:${s.color}">${s.val}</div>`;
+    statsEl.appendChild(div);
+  });
+  show('result');
+}
+</script>
+</body>
+</html>

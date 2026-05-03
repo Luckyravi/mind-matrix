@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Presence Quest - Real Life Mind Trainer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.9), transparent 35%),
+        linear-gradient(135deg, #111827, #4338ca, #ec4899);
+      color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 980px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 28px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: #d1d5db;
+      font-size: 1rem;
+    }
+
+    .main {
+      padding: 24px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: #f3f4f6;
+      padding: 14px;
+      border-radius: 18px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.45rem;
+      color: #111827;
+    }
+
+    .stat span {
+      font-size: 0.78rem;
+      color: #6b7280;
+    }
+
+    .arena {
+      min-height: 390px;
+      background: linear-gradient(145deg, #ffffff, #eef2ff);
+      border: 2px solid #e5e7eb;
+      border-radius: 28px;
+      padding: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 7px 13px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.78rem;
+      background: #111827;
+      color: white;
+    }
+
+    .badge.warning {
+      background: #f59e0b;
+      color: #111827;
+    }
+
+    .badge.danger {
+      background: #ef4444;
+    }
+
+    .scenario {
+      font-size: 1.45rem;
+      font-weight: 850;
+      line-height: 1.35;
+      margin-bottom: 14px;
+    }
+
+    .instruction {
+      font-size: 1rem;
+      color: #4b5563;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .timer-bar {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .timer-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444);
+      transition: width 0.1s linear;
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 18px;
+      padding: 15px 18px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 20px rgba(0,0,0,0.14);
+    }
+
+    .option {
+      background: white;
+      border: 2px solid #d1d5db;
+      text-align: left;
+      min-height: 72px;
+    }
+
+    .option:hover {
+      border-color: #4f46e5;
+    }
+
+    .primary {
+      background: #111827;
+      color: white;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .feedback {
+      margin-top: 18px;
+      min-height: 34px;
+      font-weight: 850;
+      font-size: 1rem;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .coach {
+      margin-top: 18px;
+      padding: 16px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 18px;
+      line-height: 1.55;
+      color: #374151;
+    }
+
+    .shake {
+      animation: shake 0.3s ease;
+    }
+
+    .pop {
+      animation: pop 0.25s ease;
+    }
+
+    .distraction {
+      animation: wiggle 1s infinite ease-in-out;
+      border-color: #ef4444 !important;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.97); opacity: 0.6; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0); }
+      50% { transform: rotate(1deg); }
+    }
+
+    @media (max-width: 760px) {
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .options {
+        grid-template-columns: 1fr;
+      }
+
+      header h1 {
+        font-size: 1.6rem;
+      }
+
+      .scenario {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>🧠 Presence Quest</h1>
+      <p>A real-life presence-of-mind simulator for calm thinking under pressure.</p>
+    </header>
+
+    <section class="main">
+      <div class="stats">
+        <div class="stat"><strong id="score">0</strong><span>Score</span></div>
+        <div class="stat"><strong id="round">0</strong><span>Round</span></div>
+        <div class="stat"><strong id="level">1</strong><span>Level</span></div>
+        <div class="stat"><strong id="streak">0</strong><span>Streak</span></div>
+        <div class="stat"><strong id="calm">100</strong><span>Calm %</span></div>
+      </div>
+
+      <div class="arena" id="arena">
+        <div class="badge-row">
+          <span class="badge" id="modeBadge">Ready</span>
+          <span class="badge warning" id="ruleBadge">Read carefully</span>
+        </div>
+
+        <div class="timer-bar">
+          <div class="timer-fill" id="timerFill"></div>
+        </div>
+
+        <h2 class="scenario" id="scenario">Press Start. Each round gives you a real-life pressure situation.</h2>
+        <p class="instruction" id="instruction">Your goal is not just speed. Your goal is calm, correct action.</p>
+
+        <div class="options" id="options"></div>
+        <div class="feedback" id="feedback"></div>
+      </div>
+
+      <div class="controls">
+        <button class="primary" onclick="startGame()">Start Challenge</button>
+        <button class="secondary" onclick="showTrainingMode()">Training Tips</button>
+        <button class="secondary" onclick="resetGame()">Reset</button>
+      </div>
+
+      <div class="coach" id="coach">
+        <strong>Coach note:</strong> Presence of mind means pausing just enough to choose the best action, not reacting blindly.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const scenarioBank = [
+      {
+        mode: "Meeting Pressure",
+        q: "In a meeting, someone asks you a question you did not expect. What is the best first response?",
+        options: [
+          "Answer immediately even if unsure",
+          "Pause, clarify the question, then answer",
+          "Say you do not know and stop",
+          "Change the topic quickly"
+        ],
+        answer: "Pause, clarify the question, then answer",
+        lesson: "A calm pause makes you look thoughtful, not weak."
+      },
+      {
+        mode: "Stage Presence",
+        q: "You are speaking on stage and suddenly forget your next point. What should you do?",
+        options: [
+          "Panic and say sorry repeatedly",
+          "Pause, breathe, summarize your last point",
+          "Look down silently for a long time",
+          "End the speech immediately"
+        ],
+        answer: "Pause, breathe, summarize your last point",
+        lesson: "Repeating the previous point gives your brain time to recover."
+      },
+      {
+        mode: "Emergency Calm",
+        q: "You see a child slipping near stairs. What should you do first?",
+        options: [
+          "Shout randomly",
+          "Move quickly but safely toward the child",
+          "Start blaming someone",
+          "Take out your phone first"
+        ],
+        answer: "Move quickly but safely toward the child",
+        lesson: "Presence of mind means useful action before emotional reaction."
+      },
+      {
+        mode: "Argument Control",
+        q: "Someone insults you in front of others. What is the strongest response?",
+        options: [
+          "Insult them back immediately",
+          "Stay calm and ask them to explain respectfully",
+          "Walk away crying",
+          "Laugh loudly to hide anger"
+        ],
+        answer: "Stay calm and ask them to explain respectfully",
+        lesson: "Control is power. Reaction gives control away."
+      },
+      {
+        mode: "Focus Test",
+        q: "Your phone notification pops up while you are solving an important task. What should you do?",
+        options: [
+          "Check it quickly",
+          "Ignore it until the task checkpoint is complete",
+          "Reply while working",
+          "Open social media for a break"
+        ],
+        answer: "Ignore it until the task checkpoint is complete",
+        lesson: "Presence of mind is also protecting your attention."
+      },
+      {
+        mode: "Interview Moment",
+        q: "An interviewer asks a question where you only know half the answer. What should you do?",
+        options: [
+          "Fake confidence and make up details",
+          "Share what you know, state your assumption, and reason forward",
+          "Say only yes or no",
+          "Avoid the question"
+        ],
+        answer: "Share what you know, state your assumption, and reason forward",
+        lesson: "Structured honesty creates trust."
+      },
+      {
+        mode: "Mistake Recovery",
+        q: "You made a visible mistake during a presentation. What is the best move?",
+        options: [
+          "Deny it",
+          "Correct it briefly and continue confidently",
+          "Spend five minutes explaining why it happened",
+          "Blame the slides"
+        ],
+        answer: "Correct it briefly and continue confidently",
+        lesson: "Quick recovery matters more than perfect performance."
+      },
+      {
+        mode: "Decision Speed",
+        q: "You have 30 seconds to choose between two decent options. What helps most?",
+        options: [
+          "Wait for perfect clarity",
+          "Pick based on the most important outcome",
+          "Ask everyone around you",
+          "Avoid deciding"
+        ],
+        answer: "Pick based on the most important outcome",
+        lesson: "Fast decisions improve when you know the main priority."
+      }
+    ];
+
+    const trickBank = [
+      {
+        mode: "Reverse Rule",
+        q: "Rule: Choose the option that is LEAST useful in a crisis.",
+        options: ["Breathe first", "Observe the situation", "Panic loudly", "Act safely"],
+        answer: "Panic loudly",
+        lesson: "Read the rule. Sometimes the question asks for the opposite."
+      },
+      {
+        mode: "Pattern Breaker",
+        q: "For this round only, choose the SLOWEST but safest response.",
+        options: ["Rush without checking", "Pause, scan, then act", "Copy someone else", "Guess instantly"],
+        answer: "Pause, scan, then act",
+        lesson: "Presence of mind is not always fastest. It is the right speed."
+      },
+      {
+        mode: "Distraction Trap",
+        q: "Ignore the most dramatic option. Choose the most composed response.",
+        options: ["🔥 SHOUT AND TAKE CONTROL!", "Pause and ask one clear question", "Run away", "Freeze completely"],
+        answer: "Pause and ask one clear question",
+        lesson: "Dramatic does not always mean effective."
+      }
+    ];
+
+    let score = 0;
+    let round = 0;
+    let level = 1;
+    let streak = 0;
+    let calm = 100;
+    let currentAnswer = "";
+    let currentLesson = "";
+    let roundTimer = null;
+    let timeLimit = 9000;
+    let timeRemaining = timeLimit;
+    let active = false;
+
+    const scoreEl = document.getElementById("score");
+    const roundEl = document.getElementById("round");
+    const levelEl = document.getElementById("level");
+    const streakEl = document.getElementById("streak");
+    const calmEl = document.getElementById("calm");
+    const scenarioEl = document.getElementById("scenario");
+    const instructionEl = document.getElementById("instruction");
+    const optionsEl = document.getElementById("options");
+    const feedbackEl = document.getElementById("feedback");
+    const modeBadge = document.getElementById("modeBadge");
+    const ruleBadge = document.getElementById("ruleBadge");
+    const timerFill = document.getElementById("timerFill");
+    const arena = document.getElementById("arena");
+    const coach = document.getElementById("coach");
+
+    function updateStats() {
+      scoreEl.textContent = score;
+      roundEl.textContent = round;
+      levelEl.textContent = level;
+      streakEl.textContent = streak;
+      calmEl.textContent = calm;
+    }
+
+    function startGame() {
+      score = 0;
+      round = 0;
+      level = 1;
+      streak = 0;
+      calm = 100;
+      active = true;
+      updateStats();
+      nextRound();
+    }
+
+    function resetGame() {
+      clearInterval(roundTimer);
+      active = false;
+      score = 0;
+      round = 0;
+      level = 1;
+      streak = 0;
+      calm = 100;
+      updateStats();
+      modeBadge.textContent = "Ready";
+      ruleBadge.textContent = "Read carefully";
+      scenarioEl.textContent = "Press Start. Each round gives you a real-life pressure situation.";
+      instructionEl.textContent = "Your goal is not just speed. Your goal is calm, correct action.";
+      optionsEl.innerHTML = "";
+      feedbackEl.textContent = "";
+      timerFill.style.width = "100%";
+      coach.innerHTML = "<strong>Coach note:</strong> Presence of mind means pausing just enough to choose the best action, not reacting blindly.";
+    }
+
+    function nextRound() {
+      if (!active) return;
+      clearInterval(roundTimer);
+      round++;
+
+      if (score > level * 70) level++;
+      timeLimit = Math.max(4500, 9500 - level * 700);
+      timeRemaining = timeLimit;
+
+      const useTrick = round % 4 === 0 || Math.random() < 0.25;
+      const item = useTrick ? randomItem(trickBank) : randomItem(scenarioBank);
+
+      currentAnswer = item.answer;
+      currentLesson = item.lesson;
+
+      modeBadge.textContent = item.mode;
+      ruleBadge.textContent = useTrick ? "Rule changed!" : "Real-life choice";
+      ruleBadge.className = useTrick ? "badge danger" : "badge warning";
+
+      scenarioEl.textContent = item.q;
+      instructionEl.textContent = getInstruction(useTrick);
+      feedbackEl.textContent = "";
+      feedbackEl.style.color = "#111827";
+      optionsEl.innerHTML = "";
+
+      const shuffledOptions = shuffle([...item.options]);
+      shuffledOptions.forEach((option, index) => {
+        const btn = document.createElement("button");
+        btn.className = "option";
+        if (useTrick && index === 0 && option !== currentAnswer) {
+          btn.classList.add("distraction");
+        }
+        btn.textContent = option;
+        btn.onclick = () => choose(option);
+        optionsEl.appendChild(btn);
+      });
+
+      arena.classList.remove("pop");
+      void arena.offsetWidth;
+      arena.classList.add("pop");
+
+      startRoundTimer();
+      updateStats();
+    }
+
+    function startRoundTimer() {
+      timerFill.style.width = "100%";
+      roundTimer = setInterval(() => {
+        timeRemaining -= 100;
+        const percent = Math.max(0, (timeRemaining / timeLimit) * 100);
+        timerFill.style.width = percent + "%";
+
+        if (timeRemaining <= 0) {
+          clearInterval(roundTimer);
+          timeoutRound();
+        }
+      }, 100);
+    }
+
+    function choose(option) {
+      if (!active) return;
+      clearInterval(roundTimer);
+
+      if (option === currentAnswer) {
+        streak++;
+        const speedBonus = Math.round((timeRemaining / timeLimit) * 10);
+        const streakBonus = Math.min(streak * 2, 12);
+        score += 15 + speedBonus + streakBonus;
+        calm = Math.min(100, calm + 2);
+        feedbackEl.textContent = "✅ Correct: " + currentLesson;
+        feedbackEl.style.color = "#059669";
+      } else {
+        streak = 0;
+        calm = Math.max(0, calm - 12);
+        score = Math.max(0, score - 8);
+        feedbackEl.textContent = "❌ Missed. Better answer: " + currentAnswer;
+        feedbackEl.style.color = "#dc2626";
+        arena.classList.add("shake");
+        setTimeout(() => arena.classList.remove("shake"), 350);
+      }
+
+      updateStats();
+
+      if (round >= 20) {
+        setTimeout(endGame, 1300);
+      } else {
+        setTimeout(nextRound, 1300);
+      }
+    }
+
+    function timeoutRound() {
+      streak = 0;
+      calm = Math.max(0, calm - 8);
+      feedbackEl.textContent = "⏳ Time up. Best answer: " + currentAnswer;
+      feedbackEl.style.color = "#b45309";
+      updateStats();
+
+      if (round >= 20) {
+        setTimeout(endGame, 1300);
+      } else {
+        setTimeout(nextRound, 1300);
+      }
+    }
+
+    function endGame() {
+      clearInterval(roundTimer);
+      active = false;
+
+      let title = "Focused Beginner";
+      if (score >= 420) title = "Calm Commander";
+      else if (score >= 300) title = "Quick Thinker";
+      else if (score >= 180) title = "Steady Responder";
+
+      modeBadge.textContent = "Complete";
+      ruleBadge.textContent = title;
+      ruleBadge.className = "badge warning";
+      scenarioEl.textContent = "Challenge complete!";
+      instructionEl.textContent = `Your level: ${title}. Score: ${score}. Calm score: ${calm}%.`;
+      optionsEl.innerHTML = "";
+      feedbackEl.textContent = "Play once daily. Try to improve calm score, not just speed.";
+      feedbackEl.style.color = "#111827";
+      coach.innerHTML = `<strong>Final coach note:</strong> Presence of mind improves when you practise three habits: pause, observe, choose. Your strongest score comes when speed and calm work together.`;
+    }
+
+    function showTrainingMode() {
+      coach.innerHTML = `
+        <strong>Training tips:</strong><br>
+        1. Read the rule before clicking.<br>
+        2. In pressure, breathe once before acting.<br>
+        3. Choose the option that reduces damage first.<br>
+        4. Do not get fooled by dramatic or loud choices.<br>
+        5. In real life, presence of mind = calm + clarity + action.
+      `;
+    }
+
+    function getInstruction(isTrick) {
+      if (isTrick) {
+        return "Careful: this round may ask for the opposite, the safest, or the least useful choice. Read before clicking.";
+      }
+      return "Choose the response that shows calm thinking, practical action, and control under pressure.";
+    }
+
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+  </script>
+</body>
+</html>
