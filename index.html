@@ -4,146 +4,174 @@
 <meta charset="UTF-8">
 <title>Mind Matrix!</title>
 <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg,#0f172a,#1e293b);
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  background: #0a0f1c;
   color: white;
   min-height: 100vh;
+  padding-bottom: 60px;
 }
 
+/* HEADER */
 header {
-  padding: 20px 30px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(10px);
+  align-items: center;
+  padding: 20px 40px;
+  background: rgba(10, 15, 28, 0.98);
+  backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 header h1 {
-  margin: 0;
-  font-size: 2.3rem;
+  font-size: 2.4rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.back-btn {
-  padding: 10px 20px;
-  background: #334155;
+header .home-btn {
+  padding: 10px 26px;
+  background: #1e2937;
   border: none;
   border-radius: 50px;
   color: white;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s;
 }
 
-.back-btn:hover {
+header .home-btn:hover {
   background: #6366f1;
+  transform: translateY(-2px);
 }
 
-/* Switch */
-.switch {
+/* TABS */
+.tabs {
   display: flex;
   justify-content: center;
-  margin: 30px 0;
-  gap: 12px;
+  gap: 15px;
+  margin: 50px 0 40px;
 }
 
-.switch button {
-  padding: 12px 32px;
+.tab {
+  padding: 14px 40px;
   border: none;
-  background: #334155;
-  color: white;
-  border-radius: 30px;
-  cursor: pointer;
+  border-radius: 50px;
+  font-size: 1.1rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.switch button.active {
+.tab.active {
   background: #6366f1;
+  box-shadow: 0 5px 20px rgba(99, 102, 241, 0.5);
 }
 
-/* Grid */
+.tab:not(.active) {
+  background: #1e2937;
+}
+
+/* GRID */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 25px;
-  max-width: 1100px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0 40px;
 }
 
 .card {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #1e2937;
   border-radius: 20px;
-  padding: 30px;
+  padding: 32px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.4s ease;
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-12px);
   border-color: #6366f1;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
 }
 
-.card h3 { margin: 0 0 12px; font-size: 1.5rem; }
-.card p { color: #cbd5f5; }
+.card h3 {
+  font-size: 1.65rem;
+  margin: 18px 0 10px;
+}
+
+.card p {
+  color: #94a3b8;
+  line-height: 1.5;
+}
 </style>
 </head>
 <body>
 
 <header>
   <h1>🧠 Mind Matrix!</h1>
-  <button class="back-btn" onclick="goHome()">Home</button>
+  <button class="home-btn" onclick="goHome()">Home</button>
 </header>
 
-<div class="switch">
-  <button class="active" onclick="showSection('games')">Games</button>
-  <button onclick="showSection('tools')">Mind Tools</button>
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">Games</button>
+  <button class="tab" onclick="switchTab(1)">Mind Tools</button>
 </div>
 
-<!-- Games Section -->
-<div id="games" class="section active">
-  <div class="grid">
-    <div class="card" onclick="openGame('sudoku.html')">
-      <h3>🧩 Sudoku</h3>
-      <p>Logic + Pattern Thinking</p>
-    </div>
-    <div class="card" onclick="openGame('shooter_game.html')">
-      <h3>🎯 Shooter Game</h3>
-      <p>Reaction & Focus Training</p>
-    </div>
+<!-- Games -->
+<div id="games-grid" class="grid">
+  <div class="card" onclick="openPage('sudoku.html')">
+    <h3>🧩 Sudoku</h3>
+    <p>Logic + Pattern Thinking</p>
+  </div>
+  <div class="card" onclick="openPage('shooter_game.html')">
+    <h3>🎯 Shooter Game</h3>
+    <p>Reaction & Focus Training</p>
   </div>
 </div>
 
-<!-- Mind Tools Section -->
-<div id="tools" class="section">
-  <div class="grid">
-    <div class="card" onclick="openGame('presence_of_mind_game.html')">
-      <h3>🧘 Presence Trainer</h3>
-      <p>Real-life Decision Making</p>
-    </div>
-    <div class="card" onclick="openGame('mindflow100_mic.html')">
-      <h3>🌊 MindFlow 100</h3>
-      <p>Deep Focus Builder</p>
-    </div>
+<!-- Mind Tools -->
+<div id="tools-grid" class="grid" style="display: none;">
+  <div class="card" onclick="openPage('presence_of_mind_game.html')">
+    <h3>🧘 Presence Trainer</h3>
+    <p>Real-life Decision Making</p>
+  </div>
+  <div class="card" onclick="openPage('mindflow100_mic.html')">
+    <h3>🌊 MindFlow 100</h3>
+    <p>Deep Focus Builder</p>
   </div>
 </div>
 
 <script>
-function showSection(sec) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById(sec).classList.add('active');
-  
-  document.querySelectorAll('.switch button').forEach(b => b.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+// Tab Switching
+function switchTab(n) {
+  const games = document.getElementById('games-grid');
+  const tools = document.getElementById('tools-grid');
+  const tabs = document.querySelectorAll('.tab');
+
+  if (n === 0) {
+    games.style.display = 'grid';
+    tools.style.display = 'none';
+  } else {
+    games.style.display = 'none';
+    tools.style.display = 'grid';
+  }
+
+  tabs.forEach((tab, i) => {
+    tab.classList.toggle('active', i === n);
+  });
 }
 
-function openGame(page) {
+function openPage(page) {
   window.location.href = page;
 }
 
@@ -151,5 +179,6 @@ function goHome() {
   window.location.href = 'index.html';
 }
 </script>
+
 </body>
 </html>
